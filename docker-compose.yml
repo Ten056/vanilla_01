@@ -1,0 +1,60 @@
+services:
+  frontend:
+    build:
+      context: frontend
+    tty: true
+    volumes:
+      - ./frontend:/frontend
+    ports:
+      - 3001:3000
+    env_file:
+      - ./.env.dev
+    environment:
+      - WATCHPACK_POLLING=true
+  backend:
+    build:
+      context: backend
+    tty: true
+    volumes:
+      - ./backend:/backend
+      - static_volume:/backend/static
+      - media_volume:/backend/media
+    command: gunicorn api.wsgi:application --bind 0.0.0.0:8000
+    expose:
+      - 8000
+    depends_on:
+      - db
+    env_file:
+      - ./.env.dev
+  db:
+    image: postgres
+    env_file:
+      - ./.env.dev
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+  nginx:
+    build: ./nginx
+    volumes:
+      - static_volume:/home/app/web/static
+      - media_volume:/home/app/web/media
+    ports:
+      - 11310:80
+    depends_on:
+      - backend
+  pgadmin4:
+    image: dpage/pgadmin4
+    ports:
+      - 8881:80
+    volumes:
+      - pgadmin4_data:/var/lib/pgadmin
+    env_file:
+      - ./.env.dev
+    hostname: pgadmin4
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+  pgadmin4_data:
+  static_volume:
+  media_volume:
